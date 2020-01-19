@@ -205,6 +205,7 @@ export class SatCalendarFooter<D> {
   styleUrls: ['calendar.css'],
   host: {
     'class': 'mat-calendar',
+    'style': 'width:100%'
   },
   exportAs: 'matCalendar',
   encapsulation: ViewEncapsulation.None,
@@ -251,6 +252,7 @@ export class SatCalendar<D> implements AfterContentInit, AfterViewChecked, OnDes
 
   /** An input indicating the type of the footer component, if set. */
   @Input() footerComponent: ComponentType<any>;
+  @Input() multiple: boolean = false;
 
   /** A portal containing the footer component type for this calendar. */
   _calendarFooterPortal: Portal<any>;

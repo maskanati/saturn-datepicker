@@ -2,7 +2,8 @@
 <ng-template [cdkPortalOutlet]="_calendarHeaderPortal"></ng-template>
 
 <div class="mat-calendar-content" [ngSwitch]="currentView" cdkMonitorSubtreeFocus tabindex="-1">
-  <sat-month-view
+<div [class.multiple-view]="multiple">
+      <sat-month-view
       *ngSwitchCase="'month'"
       [(activeDate)]="activeDate"
       [selected]="selected"
@@ -18,6 +19,27 @@
       (selectedChange)="_dateSelected($event)"
       (_userSelection)="_userSelected()">
   </sat-month-view>
+</div>
+
+
+  <div *ngIf="multiple"  class="multiple-view">
+        <sat-month-view 
+      *ngSwitchCase="'month'"
+      [(activeDate)]="activeDate"
+      [selected]="selected"
+      [beginDate]="beginDate"
+      [endDate]="endDate"
+      [rangeMode]="rangeMode"
+      [closeAfterSelection]="closeAfterSelection"
+      [dateFilter]="dateFilter"
+      [maxDate]="maxDate"
+      [minDate]="minDate"
+      [dateClass]="dateClass"
+      [beginDateSelected]="beginDateSelected"
+      (selectedChange)="_dateSelected($event)"
+      (_userSelection)="_userSelected()">
+  </sat-month-view>
+  </div>
 
   <sat-year-view
       *ngSwitchCase="'year'"
