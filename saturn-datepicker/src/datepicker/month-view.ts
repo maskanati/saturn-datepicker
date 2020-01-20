@@ -93,12 +93,13 @@ export class SatMonthView<D> implements AfterContentInit {
 
   /** Whenever user already selected start of dates interval. An inner property that avoid asynchronous problems */
   _beginDateSelected: D | null;
+  @Input() viewNumber = 0;
 
   /**
    * The date to display in this month view (everything other than the month and year is ignored).
    */
   @Input()
-  get activeDate(): D { return this._activeDate; }
+  get activeDate(): D { return this._dateAdapter.addCalendarMonths(this._activeDate, this.viewNumber) }
   set activeDate(value: D) {
     const oldActiveDate = this._activeDate;
     const validDate =
