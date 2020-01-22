@@ -1,3 +1,4 @@
+import { CellChangeDTO } from './calendar-body';
 /**
  * @license
  * Copyright Google LLC All Rights Reserved.
@@ -94,12 +95,12 @@ export class SatMonthView<D> implements AfterContentInit {
   /** Whenever user already selected start of dates interval. An inner property that avoid asynchronous problems */
   _beginDateSelected: D | null;
   @Input() viewNumber = 0;
-
+ @Input() activeViewCellStatus;
   /**
    * The date to display in this month view (everything other than the month and year is ignored).
    */
   @Input()
-  get activeDate(): D { return this._dateAdapter.addCalendarMonths(this._activeDate, this.viewNumber) }
+  get activeDate(): D { return this._activeDate; }
   set activeDate(value: D) {
     const oldActiveDate = this._activeDate;
     const validDate =
@@ -108,6 +109,10 @@ export class SatMonthView<D> implements AfterContentInit {
     if (!this._hasSameMonthAndYear(oldActiveDate, this._activeDate)) {
       this._init();
     }
+  }
+
+  get extraViewActiveDate(): D {
+    return this._dateAdapter.addCalendarMonths(this._activeDate, this.viewNumber);
   }
   private _activeDate: D;
 
@@ -141,6 +146,7 @@ export class SatMonthView<D> implements AfterContentInit {
 
   /** Function that can be used to add custom CSS classes to dates. */
   @Input() dateClass: (date: D) => SatCalendarCellCssClasses;
+  @Input() beginCellSelected: CellChangeDTO;
 
   /** Emits when a new date is selected. */
   @Output() readonly selectedChange: EventEmitter<D | null> = new EventEmitter<D | null>();
@@ -150,6 +156,9 @@ export class SatMonthView<D> implements AfterContentInit {
 
   /** Emits when any date is activated. */
   @Output() readonly activeDateChange: EventEmitter<D> = new EventEmitter<D>();
+  @Output() readonly mouseOverEvent: EventEmitter<CellChangeDTO> = new EventEmitter<CellChangeDTO>();
+  @Output() readonly   beginCellSelectedChange 
+  : EventEmitter<CellChangeDTO> = new EventEmitter<CellChangeDTO>();
 
   /** The body of calendar table */
   @ViewChild(SatCalendarBody, {static: false}) _matCalendarBody: SatCalendarBody;
@@ -192,35 +201,44 @@ export class SatMonthView<D> implements AfterContentInit {
   ngAfterContentInit() {
     this._init();
   }
-
+  _handleMouseOver(cellValue: number) {
+    this.mouseOverEvent.emit(new CellChangeDTO(this.viewNumber, cellValue));
+  }
   /** Handles when a new date is selected. */
   _dateSelected(date: number) {
 
     if (this.rangeMode) {
 
-      const selectedYear = this._dateAdapter.getYear(this.activeDate);
-      const selectedMonth = this._dateAdapter.getMonth(this.activeDate);
+      const selectedYear = this._dateAdapter.getYear(this.extraViewActiveDate);
+      const selectedMonth = this._dateAdapter.getMonth(this.extraViewActiveDate);
       const selectedDate = this._dateAdapter.createDate(selectedYear, selectedMonth, date);
       if (!this._beginDateSelected) { // At first click emit the same start and end of interval
         this._beginDateSelected = selectedDate;
         this.selectedChange.emit(selectedDate);
-      } else {
+        this.beginCellSelectedChange.emit(new CellChangeDTO(this.viewNumber,date));
+    } else {
         this._beginDateSelected = null;
         this.selectedChange.emit(selectedDate);
         this._userSelection.emit();
+        this.beginCellSelectedChange.emit(null);
       }
       this._createWeekCells();
-      this.activeDate = selectedDate;
+      if (this.viewNumber === 0) {
+        this.activeDate = selectedDate;
+      }
       this._focusActiveCell();
-    } else if (this._selectedDate != date) {
 
-      const selectedYear = this._dateAdapter.getYear(this.activeDate);
-      const selectedMonth = this._dateAdapter.getMonth(this.activeDate);
+
+    } else if (this._selectedDate !== date) {
+
+      const selectedYear = this._dateAdapter.getYear(this.extraViewActiveDate);
+      const selectedMonth = this._dateAdapter.getMonth(this.extraViewActiveDate);
       const selectedDate = this._dateAdapter.createDate(selectedYear, selectedMonth, date);
 
       this.selectedChange.emit(selectedDate);
       this._userSelection.emit();
       this._createWeekCells();
+      this.beginCellSelectedChange.emit(null);
     }
   }
 
@@ -235,40 +253,40 @@ export class SatMonthView<D> implements AfterContentInit {
 
     switch (event.keyCode) {
       case LEFT_ARROW:
-        this.activeDate = this._dateAdapter.addCalendarDays(this._activeDate, isRtl ? 1 : -1);
+        this.activeDate = this._dateAdapter.addCalendarDays(this.extraViewActiveDate, isRtl ? 1 : -1);
         break;
       case RIGHT_ARROW:
-        this.activeDate = this._dateAdapter.addCalendarDays(this._activeDate, isRtl ? -1 : 1);
+        this.activeDate = this._dateAdapter.addCalendarDays(this.extraViewActiveDate, isRtl ? -1 : 1);
         break;
       case UP_ARROW:
-        this.activeDate = this._dateAdapter.addCalendarDays(this._activeDate, -7);
+        this.activeDate = this._dateAdapter.addCalendarDays(this.extraViewActiveDate, -7);
         break;
       case DOWN_ARROW:
-        this.activeDate = this._dateAdapter.addCalendarDays(this._activeDate, 7);
+        this.activeDate = this._dateAdapter.addCalendarDays(this.extraViewActiveDate, 7);
         break;
       case HOME:
-        this.activeDate = this._dateAdapter.addCalendarDays(this._activeDate,
-            1 - this._dateAdapter.getDate(this._activeDate));
+        this.activeDate = this._dateAdapter.addCalendarDays(this.extraViewActiveDate,
+            1 - this._dateAdapter.getDate(this.extraViewActiveDate));
         break;
       case END:
-        this.activeDate = this._dateAdapter.addCalendarDays(this._activeDate,
-            (this._dateAdapter.getNumDaysInMonth(this._activeDate) -
-              this._dateAdapter.getDate(this._activeDate)));
+        this.activeDate = this._dateAdapter.addCalendarDays(this.extraViewActiveDate,
+            (this._dateAdapter.getNumDaysInMonth(this.extraViewActiveDate) -
+              this._dateAdapter.getDate(this.extraViewActiveDate)));
         break;
       case PAGE_UP:
         this.activeDate = event.altKey ?
-            this._dateAdapter.addCalendarYears(this._activeDate, -1) :
-            this._dateAdapter.addCalendarMonths(this._activeDate, -1);
+            this._dateAdapter.addCalendarYears(this.extraViewActiveDate, -1) :
+            this._dateAdapter.addCalendarMonths(this.extraViewActiveDate, -1);
         break;
       case PAGE_DOWN:
         this.activeDate = event.altKey ?
-            this._dateAdapter.addCalendarYears(this._activeDate, 1) :
-            this._dateAdapter.addCalendarMonths(this._activeDate, 1);
+            this._dateAdapter.addCalendarYears(this.extraViewActiveDate, 1) :
+            this._dateAdapter.addCalendarMonths(this.extraViewActiveDate, 1);
         break;
       case ENTER:
       case SPACE:
-        if (!this.dateFilter || this.dateFilter(this._activeDate)) {
-          this._dateSelected(this._dateAdapter.getDate(this._activeDate));
+        if (!this.dateFilter || this.dateFilter(this.extraViewActiveDate)) {
+          this._dateSelected(this._dateAdapter.getDate(this.extraViewActiveDate));
           if (!this._beginDateSelected) {
             this._userSelection.emit();
           }
@@ -284,8 +302,8 @@ export class SatMonthView<D> implements AfterContentInit {
         return;
     }
 
-    if (this._dateAdapter.compareDate(oldActiveDate, this.activeDate)) {
-      this.activeDateChange.emit(this.activeDate);
+    if (this._dateAdapter.compareDate(oldActiveDate, this.extraViewActiveDate)) {
+      this.activeDateChange.emit(this.extraViewActiveDate);
     }
 
     this._focusActiveCell();
@@ -299,11 +317,11 @@ export class SatMonthView<D> implements AfterContentInit {
     this._selectedDate = this._getDateInCurrentMonth(this.selected);
     this._todayDate = this._getDateInCurrentMonth(this._dateAdapter.today());
     this._monthLabel =
-        this._dateAdapter.getMonthNames('short')[this._dateAdapter.getMonth(this.activeDate)]
+        this._dateAdapter.getMonthNames('short')[this._dateAdapter.getMonth(this.extraViewActiveDate)]
             .toLocaleUpperCase();
 
-    let firstOfMonth = this._dateAdapter.createDate(this._dateAdapter.getYear(this.activeDate),
-        this._dateAdapter.getMonth(this.activeDate), 1);
+    const firstOfMonth = this._dateAdapter.createDate(this._dateAdapter.getYear(this.extraViewActiveDate),
+        this._dateAdapter.getMonth(this.extraViewActiveDate), 1);
     this._firstWeekOffset =
         (DAYS_PER_WEEK + this._dateAdapter.getDayOfWeek(firstOfMonth) -
          this._dateAdapter.getFirstDayOfWeek()) % DAYS_PER_WEEK;
@@ -325,7 +343,7 @@ export class SatMonthView<D> implements AfterContentInit {
     const longWeekdays = this._dateAdapter.getDayOfWeekNames('long');
 
     // Rotate the labels for days of the week based on the configured first day of the week.
-    let weekdays = longWeekdays.map((long, i) => {
+    const weekdays = longWeekdays.map((long, i) => {
         return {long, narrow: narrowWeekdays[i]};
     });
     this._weekdays = weekdays.slice(firstDayOfWeek).concat(weekdays.slice(0, firstDayOfWeek));
@@ -333,17 +351,17 @@ export class SatMonthView<D> implements AfterContentInit {
 
   /** Creates SatCalendarCells for the dates in this month. */
   private _createWeekCells() {
-    const daysInMonth = this._dateAdapter.getNumDaysInMonth(this.activeDate);
+    const daysInMonth = this._dateAdapter.getNumDaysInMonth(this.extraViewActiveDate);
     const dateNames = this._dateAdapter.getDateNames();
     this._weeks = [[]];
     for (let i = 0, cell = this._firstWeekOffset; i < daysInMonth; i++, cell++) {
-      if (cell == DAYS_PER_WEEK) {
+      if (cell === DAYS_PER_WEEK) {
         this._weeks.push([]);
         cell = 0;
       }
       const date = this._dateAdapter.createDate(
-            this._dateAdapter.getYear(this.activeDate),
-            this._dateAdapter.getMonth(this.activeDate), i + 1);
+            this._dateAdapter.getYear(this.extraViewActiveDate),
+            this._dateAdapter.getMonth(this.extraViewActiveDate), i + 1);
       const enabled = this._shouldEnableDate(date);
       const ariaLabel = this._dateAdapter.format(date, this._dateFormats.display.dateA11yLabel);
       const cellClasses = this.dateClass ? this.dateClass(date) : undefined;
@@ -366,14 +384,14 @@ export class SatMonthView<D> implements AfterContentInit {
    * Returns null if the given Date is in another month.
    */
   private _getDateInCurrentMonth(date: D | null): number | null {
-    return date && this._hasSameMonthAndYear(date, this.activeDate) ?
+    return date && this._hasSameMonthAndYear(date, this.extraViewActiveDate) ?
         this._dateAdapter.getDate(date) : null;
   }
 
   /** Checks whether the 2 dates are non-null and fall within the same month of the same year. */
   private _hasSameMonthAndYear(d1: D | null, d2: D | null): boolean {
-    return !!(d1 && d2 && this._dateAdapter.getMonth(d1) == this._dateAdapter.getMonth(d2) &&
-              this._dateAdapter.getYear(d1) == this._dateAdapter.getYear(d2));
+    return !!(d1 && d2 && this._dateAdapter.getMonth(d1) === this._dateAdapter.getMonth(d2) &&
+              this._dateAdapter.getYear(d1) === this._dateAdapter.getYear(d2));
   }
 
   /**
@@ -397,8 +415,8 @@ export class SatMonthView<D> implements AfterContentInit {
       this._endDateNumber = this._getDateInCurrentMonth(this._endDate);
       this._rangeFull = this.beginDate && this.endDate && !this._beginDateNumber &&
         !this._endDateNumber &&
-        this._dateAdapter.compareDate(this.beginDate, this.activeDate) <= 0 &&
-        this._dateAdapter.compareDate(this.activeDate, this.endDate) <= 0;
+        this._dateAdapter.compareDate(this.beginDate, this.extraViewActiveDate) <= 0 &&
+        this._dateAdapter.compareDate(this.extraViewActiveDate, this.endDate) <= 0;
     } else {
       this._beginDateNumber = this._endDateNumber = null;
       this._rangeFull = false;

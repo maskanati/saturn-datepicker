@@ -1,3 +1,4 @@
+import { CellChangeDTO } from './calendar-body';
 /**
  * @license
  * Copyright Google LLC All Rights Reserved.
@@ -212,6 +213,7 @@ export class SatCalendarFooter<D> {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SatCalendar<D> implements AfterContentInit, AfterViewChecked, OnDestroy, OnChanges {
+  beginCellSelected: CellChangeDTO;
 
     /** Beginning of date range. */
     @Input()
@@ -258,6 +260,8 @@ export class SatCalendar<D> implements AfterContentInit, AfterViewChecked, OnDes
   _calendarFooterPortal: Portal<any>;
 
   private _intlChanges: Subscription;
+
+  public activeViewCellStatus: CellChangeDTO;
 
   /**
    * Used for scheduling that focus should be moved to the active cell on the next tick.
@@ -475,7 +479,14 @@ export class SatCalendar<D> implements AfterContentInit, AfterViewChecked, OnDes
     this.activeDate = date;
     this.currentView = view;
   }
-
+  _handleMouseOver(data: CellChangeDTO){
+    this.activeViewCellStatus = data;
+    console.log('mouse',data)
+    console.log('beginCellSelected',this.beginCellSelected)
+  }
+  _handleBeginCellSelectedChange(data: CellChangeDTO){
+    this.beginCellSelected = data;
+  }
   /**
    * @param obj The object to check.
    * @returns The given object if it is both a date instance and valid, otherwise null.

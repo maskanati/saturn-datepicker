@@ -1,3 +1,4 @@
+{{_beginDateSelected}}
 <table class="mat-calendar-table">
   <thead class="mat-calendar-table-header">
     <tr><th *ngFor="let day of _weekdays" [attr.aria-label]="day.long">{{day.narrow}}</th></tr>
@@ -11,12 +12,16 @@
          [begin]="_beginDateNumber"
          [end]="_endDateNumber"
          [beginSelected]="_beginDateSelected"
+         [beginCellSelected]="beginCellSelected"
          [isBeforeSelected]="_beginDateSelected && _dateAdapter.compareDate(activeDate, _beginDateSelected) < 0"
          [rangeFull]="_rangeFull"
          [rangeMode]="rangeMode"
          [labelMinRequiredCells]="3"
+         [activeViewCellStatus]="activeViewCellStatus"
+         [viewNumber]="viewNumber"
          [activeCell]="_dateAdapter.getDate(activeDate) - 1"
          (selectedValueChange)="_dateSelected($event)"
+         (mouseOverEvent)="_handleMouseOver($event)"
          (keydown)="_handleCalendarBodyKeydown($event)">
   </tbody>
 </table>

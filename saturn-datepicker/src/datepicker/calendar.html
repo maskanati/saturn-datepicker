@@ -15,8 +15,12 @@
       [maxDate]="maxDate"
       [minDate]="minDate"
       [viewNumber] = "0"
+      [activeViewCellStatus]="activeViewCellStatus"
       [dateClass]="dateClass"
       [beginDateSelected]="beginDateSelected"
+      [beginCellSelected]="beginCellSelected"
+      (beginCellSelectedChange)="_handleBeginCellSelectedChange($event)"
+      (mouseOverEvent)="_handleMouseOver($event)"
       (selectedChange)="_dateSelected($event)"
       (_userSelection)="_userSelected()">
   </sat-month-view>
@@ -36,9 +40,13 @@
       [maxDate]="maxDate"
       [minDate]="minDate"
       [viewNumber] = "1"
+      [activeViewCellStatus]="activeViewCellStatus"
       [dateClass]="dateClass"
       [beginDateSelected]="beginDateSelected"
+      [beginCellSelected]="beginCellSelected"
       (selectedChange)="_dateSelected($event)"
+      (mouseOverEvent)="_handleMouseOver($event)"
+      (beginCellSelectedChange)="_handleBeginCellSelectedChange($event)"
       (_userSelection)="_userSelected()">
   </sat-month-view>
   </div>

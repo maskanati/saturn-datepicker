@@ -18,12 +18,12 @@ import {
   OnChanges,
   SimpleChanges,
 } from '@angular/core';
-import {take} from 'rxjs/operators';
+import { take } from 'rxjs/operators';
 
 /**
  * Extra CSS classes that can be associated with a calendar cell.
  */
-export type SatCalendarCellCssClasses = string | string[] | Set<string> | {[key: string]: any};
+export type SatCalendarCellCssClasses = string | string[] | Set<string> | { [key: string]: any };
 
 /**
  * An internal class that represents the data corresponding to a single calendar cell.
@@ -31,10 +31,15 @@ export type SatCalendarCellCssClasses = string | string[] | Set<string> | {[key:
  */
 export class SatCalendarCell {
   constructor(public value: number,
-              public displayValue: string,
-              public ariaLabel: string,
-              public enabled: boolean,
-              public cssClasses?: SatCalendarCellCssClasses) {}
+    public displayValue: string,
+    public ariaLabel: string,
+    public enabled: boolean,
+    public cssClasses?: SatCalendarCellCssClasses) { }
+}
+export class CellChangeDTO {
+  constructor(public viewNumber: number,
+    public cellValue: number
+  ) { }
 }
 
 
@@ -72,12 +77,12 @@ export class SatCalendarBody implements OnChanges {
   /** The value in the table since range of dates started.
    * Null means no interval or interval doesn't start in this month
    */
-  @Input() begin: number|null;
+  @Input() begin: number | null;
 
   /** The value in the table representing end of dates range.
    * Null means no interval or interval doesn't end in this month
    */
-  @Input() end: number|null;
+  @Input() end: number | null;
 
   /** Whenever user already selected start of dates interval. */
   @Input() beginSelected: boolean;
@@ -105,9 +110,24 @@ export class SatCalendarBody implements OnChanges {
    * maintained even as the table resizes.
    */
   @Input() cellAspectRatio = 1;
+  @Input()
+  activeViewCellStatus: CellChangeDTO;
+  // (data: CellChangeDTO) {
+  //   if (data.viewNumber > this.viewNumber) {
+  //     this._cellOver = 32;
+  //   } else if (data.viewNumber < this.viewNumber) {
+  //     this._cellOver = 0;
+  //   }
+
+
+
+  // }
+  @Input() viewNumber;
+  @Input() beginCellSelected
 
   /** Emits when a new value is selected. */
   @Output() readonly selectedValueChange: EventEmitter<number> = new EventEmitter<number>();
+  @Output() readonly mouseOverEvent: EventEmitter<number> = new EventEmitter<number>();
 
   /** The number of blank cells to put at the beginning for the first row. */
   _firstRowOffset: number;
@@ -131,11 +151,13 @@ export class SatCalendarBody implements OnChanges {
 
   _mouseOverCell(cell: SatCalendarCell): void {
     this._cellOver = cell.value;
+
+    this.mouseOverEvent.emit(cell.value);
   }
 
   ngOnChanges(changes: SimpleChanges) {
     const columnChanges = changes['numCols'];
-    const {rows, numCols} = this;
+    const { rows, numCols } = this;
 
     if (changes['rows'] || columnChanges) {
       this._firstRowOffset = rows && rows.length && rows[0].length ? numCols - rows[0].length : 0;
@@ -162,7 +184,7 @@ export class SatCalendarBody implements OnChanges {
       cellNumber -= this._firstRowOffset;
     }
 
-    return cellNumber == this.activeCell;
+    return cellNumber === this.activeCell;
   }
 
   /** Whenever to mark cell as semi-selected (inside dates interval). */
@@ -188,17 +210,34 @@ export class SatCalendarBody implements OnChanges {
 
   /** Whenever to mark cell as semi-selected before the second date is selected (between the begin cell and the hovered cell). */
   _isBetweenOverAndBegin(date: number): boolean {
-    if (!this._cellOver || !this.rangeMode || !this.beginSelected) {
+    if (!this.rangeMode || !this.beginSelected) {
       return false;
     }
-    if (this.isBeforeSelected && !this.begin) {
+    if (this.viewNumber == this.activeViewCellStatus.viewNumber && this._cellOver && this.isBeforeSelected && !this.begin) {
       return date > this._cellOver;
     }
-    if (this._cellOver > this.begin) {
+    if (this.viewNumber == this.activeViewCellStatus.viewNumber && this._cellOver > this.begin) {
       return date > this.begin && date < this._cellOver;
     }
-    if (this._cellOver < this.begin) {
+    if (this.viewNumber == this.activeViewCellStatus.viewNumber && this._cellOver && this._cellOver < this.begin) {
       return date < this.begin && date > this._cellOver;
+    }
+    if (this.beginCellSelected) {
+      if (this.viewNumber < this.activeViewCellStatus.viewNumber && this.viewNumber > this.beginCellSelected.viewNumber) {
+        return true;
+      }
+
+      if (this.viewNumber > this.activeViewCellStatus.viewNumber && this.viewNumber < this.beginCellSelected.viewNumber) {
+        return true;
+      }
+
+      if (this.viewNumber === this.beginCellSelected.viewNumber && this.viewNumber < this.activeViewCellStatus.viewNumber) {
+        return date > this.beginCellSelected.cellValue;
+      }
+
+      if (this.viewNumber === this.beginCellSelected.viewNumber && this.viewNumber > this.activeViewCellStatus.viewNumber) {
+        return date < this.beginCellSelected.cellValue;
+      }
     }
     return false;
   }
@@ -207,13 +246,20 @@ export class SatCalendarBody implements OnChanges {
   _isBegin(date: number): boolean {
     if (this.rangeMode && this.beginSelected && this._cellOver) {
       if (this.isBeforeSelected && !this.begin) {
-        return this._cellOver === date;
+        if(this._cellOver === date && this.viewNumber==this.activeViewCellStatus.viewNumber)
+console.log(1,this.viewNumber,date)
+return this._cellOver === date && this.viewNumber==this.activeViewCellStatus.viewNumber;
       } else {
-        return (this.begin === date && !(this._cellOver < this.begin)) ||
-          (this._cellOver === date && this._cellOver < this.begin)
+        if((this.begin === date && !(this._cellOver < this.begin) && this.viewNumber===this.beginCellSelected.viewNumber && this.beginCellSelected.viewNumber>=this.viewNumber) ||
+        (this._cellOver === date && this._cellOver < this.begin && this.viewNumber===this.activeViewCellStatus.viewNumber))
+console.log(2,this.viewNumber,date)
+return (this.begin === date && !(this._cellOver < this.begin) && this.viewNumber===this.beginCellSelected.viewNumber && this.activeViewCellStatus.viewNumber>=this.viewNumber) ||
+          (this._cellOver === date && this._cellOver < this.begin && this.viewNumber===this.activeViewCellStatus.viewNumber)
       }
     }
-    return this.begin === date;
+    if(this.begin === date)
+console.log(3,this.viewNumber,date)
+    return this.begin === date
   }
 
   /** Whenever to mark cell as end of the range. */
@@ -221,9 +267,11 @@ export class SatCalendarBody implements OnChanges {
     if (this.rangeMode && this.beginSelected && this._cellOver) {
       if (this.isBeforeSelected && !this.begin) {
         return false;
-      } else {
+      } else if(this.viewNumber===this.activeViewCellStatus.viewNumber) {
         return (this.end === date && !(this._cellOver > this.begin)) ||
           (this._cellOver === date && this._cellOver > this.begin)
+      }else{
+        return this.begin==date && this.viewNumber===this.beginCellSelected.viewNumber && this.viewNumber>this.activeViewCellStatus.viewNumber
       }
     }
     return this.end === date;
@@ -234,7 +282,7 @@ export class SatCalendarBody implements OnChanges {
     this._ngZone.runOutsideAngular(() => {
       this._ngZone.onStable.asObservable().pipe(take(1)).subscribe(() => {
         const activeCell: HTMLElement | null =
-            this._elementRef.nativeElement.querySelector('.mat-calendar-body-active');
+          this._elementRef.nativeElement.querySelector('.mat-calendar-body-active');
 
         if (activeCell) {
           activeCell.focus();
@@ -245,6 +293,6 @@ export class SatCalendarBody implements OnChanges {
 
   /** Whenever to highlight the target cell when selecting the second date in range mode */
   _previewCellOver(date: number): boolean {
-    return this._cellOver === date && this.rangeMode && this.beginSelected;
+    return this._cellOver === date && this.rangeMode && this.beginSelected && this.viewNumber == this.activeViewCellStatus.viewNumber;
   }
 }
