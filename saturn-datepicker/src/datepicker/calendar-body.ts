@@ -177,6 +177,11 @@ export class SatCalendarBody implements OnChanges {
   }
 
   _isActiveCell(rowIndex: number, colIndex: number): boolean {
+    if (this.activeViewCellStatus && this.activeViewCellStatus.viewNumber !== this.viewNumber) {
+      return false;
+    }
+    return false;
+
     let cellNumber = rowIndex * this.numCols + colIndex;
 
     // Account for the fact that the first row may not have as many cells.
@@ -213,29 +218,36 @@ export class SatCalendarBody implements OnChanges {
     if (!this.rangeMode || !this.beginSelected) {
       return false;
     }
-    if (this.viewNumber == this.activeViewCellStatus.viewNumber && this._cellOver && this.isBeforeSelected && !this.begin) {
+    if (this.activeViewCellStatus && this.viewNumber === this.activeViewCellStatus.viewNumber
+      && this._cellOver && this.isBeforeSelected && !this.begin) {
       return date > this._cellOver;
     }
-    if (this.viewNumber == this.activeViewCellStatus.viewNumber && this._cellOver > this.begin) {
+    if (this.activeViewCellStatus && this.viewNumber === this.activeViewCellStatus.viewNumber
+      && this._cellOver > this.begin) {
       return date > this.begin && date < this._cellOver;
     }
-    if (this.viewNumber == this.activeViewCellStatus.viewNumber && this._cellOver && this._cellOver < this.begin) {
+    if (this.activeViewCellStatus && this.viewNumber === this.activeViewCellStatus.viewNumber
+      && this._cellOver && this._cellOver < this.begin) {
       return date < this.begin && date > this._cellOver;
     }
     if (this.beginCellSelected) {
-      if (this.viewNumber < this.activeViewCellStatus.viewNumber && this.viewNumber > this.beginCellSelected.viewNumber) {
+      if (this.activeViewCellStatus && this.beginCellSelected && this.viewNumber < this.activeViewCellStatus.viewNumber
+        && this.viewNumber > this.beginCellSelected.viewNumber) {
         return true;
       }
 
-      if (this.viewNumber > this.activeViewCellStatus.viewNumber && this.viewNumber < this.beginCellSelected.viewNumber) {
+      if (this.activeViewCellStatus && this.beginCellSelected && this.viewNumber > this.activeViewCellStatus.viewNumber
+        && this.viewNumber < this.beginCellSelected.viewNumber) {
         return true;
       }
 
-      if (this.viewNumber === this.beginCellSelected.viewNumber && this.viewNumber < this.activeViewCellStatus.viewNumber) {
+      if (this.activeViewCellStatus && this.beginCellSelected && this.viewNumber === this.beginCellSelected.viewNumber
+        && this.viewNumber < this.activeViewCellStatus.viewNumber) {
         return date > this.beginCellSelected.cellValue;
       }
 
-      if (this.viewNumber === this.beginCellSelected.viewNumber && this.viewNumber > this.activeViewCellStatus.viewNumber) {
+      if (this.activeViewCellStatus && this.beginCellSelected && this.viewNumber === this.beginCellSelected.viewNumber
+        && this.viewNumber > this.activeViewCellStatus.viewNumber) {
         return date < this.beginCellSelected.cellValue;
       }
     }
@@ -246,19 +258,24 @@ export class SatCalendarBody implements OnChanges {
   _isBegin(date: number): boolean {
     if (this.rangeMode && this.beginSelected && this._cellOver) {
       if (this.isBeforeSelected && !this.begin) {
-        if(this._cellOver === date && this.viewNumber==this.activeViewCellStatus.viewNumber)
-console.log(1,this.viewNumber,date)
-return this._cellOver === date && this.viewNumber==this.activeViewCellStatus.viewNumber;
+
+        return this._cellOver === date && this.activeViewCellStatus && this.viewNumber === this.activeViewCellStatus.viewNumber;
       } else {
-        if((this.begin === date && !(this._cellOver < this.begin) && this.viewNumber===this.beginCellSelected.viewNumber && this.beginCellSelected.viewNumber>=this.viewNumber) ||
-        (this._cellOver === date && this._cellOver < this.begin && this.viewNumber===this.activeViewCellStatus.viewNumber))
-console.log(2,this.viewNumber,date)
-return (this.begin === date && !(this._cellOver < this.begin) && this.viewNumber===this.beginCellSelected.viewNumber && this.activeViewCellStatus.viewNumber>=this.viewNumber) ||
-          (this._cellOver === date && this._cellOver < this.begin && this.viewNumber===this.activeViewCellStatus.viewNumber)
+
+        return (this.begin === date
+            && !(this._cellOver < this.begin)
+            && this.beginCellSelected
+            && this.viewNumber === this.beginCellSelected.viewNumber
+            && this.activeViewCellStatus
+            && this.activeViewCellStatus.viewNumber >= this.viewNumber)
+          ||
+          (this._cellOver === date
+            && this._cellOver < this.begin
+            && this.activeViewCellStatus
+            && this.viewNumber === this.activeViewCellStatus.viewNumber)
       }
     }
-    if(this.begin === date)
-console.log(3,this.viewNumber,date)
+
     return this.begin === date
   }
 
@@ -267,11 +284,15 @@ console.log(3,this.viewNumber,date)
     if (this.rangeMode && this.beginSelected && this._cellOver) {
       if (this.isBeforeSelected && !this.begin) {
         return false;
-      } else if(this.viewNumber===this.activeViewCellStatus.viewNumber) {
+      } else if (this.activeViewCellStatus && this.viewNumber === this.activeViewCellStatus.viewNumber) {
         return (this.end === date && !(this._cellOver > this.begin)) ||
           (this._cellOver === date && this._cellOver > this.begin)
-      }else{
-        return this.begin==date && this.viewNumber===this.beginCellSelected.viewNumber && this.viewNumber>this.activeViewCellStatus.viewNumber
+      } else {
+        return this.begin === date
+        && this.beginCellSelected
+        && this.activeViewCellStatus
+        && this.viewNumber === this.beginCellSelected.viewNumber
+        && this.viewNumber > this.activeViewCellStatus.viewNumber
       }
     }
     return this.end === date;
@@ -293,6 +314,10 @@ console.log(3,this.viewNumber,date)
 
   /** Whenever to highlight the target cell when selecting the second date in range mode */
   _previewCellOver(date: number): boolean {
-    return this._cellOver === date && this.rangeMode && this.beginSelected && this.viewNumber == this.activeViewCellStatus.viewNumber;
+    return this._cellOver === date
+    && this.rangeMode
+    && this.beginSelected
+    && this.activeViewCellStatus
+    && this.viewNumber === this.activeViewCellStatus.viewNumber;
   }
 }
